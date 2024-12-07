@@ -14,8 +14,19 @@ load_dotenv(override=True)
 from upload_to_drive import upload_file_to_drive
 from settings import get_settings
 from admin import admin_bp
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+logger.info("Flask app initialized")
 # Get absolute path for uploads folder
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -532,5 +543,6 @@ def authorize_gmail():
         return jsonify({'error': error_msg}), 500
 
 if __name__ == '__main__':
+    logger.info(f"Starting application on port {os.environ.get('PORT', 8080)}")
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
