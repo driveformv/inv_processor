@@ -18,6 +18,11 @@ import logging
 import sys
 import httpx  # Import httpx library
 
+print("=== Starting application initialization ===")
+print(f"Python version: {sys.version}")
+print(f"Current directory: {os.getcwd()}")
+print(f"Directory contents: {os.listdir('.')}")
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
