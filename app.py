@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 # Validate required environment variables
 required_env_vars = [
-    'FLASK_SECRET_KEY',
     'ADMIN_USERNAME',
     'ADMIN_PASSWORD',
     'OPENAI_API_KEY',
@@ -60,7 +59,7 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Register blueprints with proper URL prefix
 app.register_blueprint(admin_bp, url_prefix='/admin')
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-here')  # Required for sessions and flash messages
+app.secret_key = 'inv-processor-secret-key-2024'  # Fixed secret key for sessions
 
 def encode_image(image_path):
     """
