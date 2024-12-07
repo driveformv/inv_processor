@@ -25,6 +25,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Validate required environment variables
+required_env_vars = [
+    'FLASK_SECRET_KEY',
+    'ADMIN_USERNAME',
+    'ADMIN_PASSWORD',
+    'OPENAI_API_KEY',
+    'GMAIL_SENDER_EMAIL'
+]
+
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
+    logger.error("Please set these variables in Kinsta's environment variables")
+    sys.exit(1)
+
 app = Flask(__name__)
 logger.info("Flask app initialized")
 # Get absolute path for uploads folder
@@ -43,8 +58,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-app.register_blueprint(admin_bp)
-app.secret_key = 'your-secret-key-here'  # Required for flash messages
+# Register blueprints with proper URL prefix
+app.register_blueprint(admin_bp, url_prefix='/admin')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-here')  # Required for sessions and flash messages
 
 def encode_image(image_path):
     """
