@@ -31,7 +31,9 @@ required_env_vars = [
     'ADMIN_USERNAME',
     'ADMIN_PASSWORD',
     'OPENAI_API_KEY',
-    'GMAIL_SENDER_EMAIL'
+    'GMAIL_SENDER_EMAIL',
+    'APP_SETTINGS',
+    'GOOGLE_CREDENTIALS'
 ]
 
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
@@ -39,6 +41,8 @@ if missing_vars:
     logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
     logger.error("Please set these variables in Kinsta's environment variables")
     sys.exit(1)
+
+logger.info("All required environment variables are present")
 
 app = Flask(__name__)
 logger.info("Flask app initialized")
@@ -49,8 +53,10 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Set poppler path based on environment
 if os.name == 'nt':  # Windows
     POPPLER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'poppler', 'poppler-24.08.0', 'Library', 'bin')
-else:  # Linux/Unix
-    POPPLER_PATH = '/usr/bin'  # Default path for poppler-utils on Linux
+else:  # Linux
+    POPPLER_PATH = '/usr/bin'  # Default location for poppler-utils on Linux
+
+logger.info(f"Using POPPLER_PATH: {POPPLER_PATH}")
 
 # Ensure upload folder exists with proper permissions
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
