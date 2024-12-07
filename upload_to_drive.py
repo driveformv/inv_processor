@@ -7,13 +7,14 @@ import json
 import hashlib
 from datetime import datetime
 
-# Get authorized credentials
-credentials = get_credentials()
-service = build('drive', 'v3', credentials=credentials)
-
 # Target folder ID for uploads
 TARGET_FOLDER_ID = '1adzLMJObHtkliMT1GA2k1msS8x2RK1oQ'
 UPLOAD_HISTORY_FILE = 'upload_history.json'
+
+def get_service():
+    """Get authorized Google Drive service"""
+    credentials = get_credentials()
+    return build('drive', 'v3', credentials=credentials)
 
 def get_file_hash(file_path):
     """Calculate MD5 hash of file to track changes"""
@@ -53,23 +54,29 @@ def upload_file_to_drive(file_path, file_name=None, folder_id=TARGET_FOLDER_ID):
     :param folder_id: ID of the folder to upload to (defaults to TARGET_FOLDER_ID)
     :return: ID of the uploaded file
     """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-
-    if file_name is None:
+    service = get_service()
+    
+    if not file_name:
         file_name = os.path.basename(file_path)
-
+    
     file_metadata = {
         'name': file_name,
         'parents': [folder_id]
     }
-
+    
     mime_type = get_mime_type(file_path)
-    media = MediaFileUpload(file_path, mimetype=mime_type)
-
-    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    print(f'File uploaded successfully to folder! File ID: {file.get("id")}')
-    return file.get('id')
+    media = MediaFileUpload(file_path, mimetype=mime_type, resumable=True)
+    
+    try:
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        return file.get('id')
+    except Exception as e:
+        print(f"Error uploading {file_name}: {str(e)}")
+        return None
 
 def process_uploads():
     """Process files in the uploads directory and only upload new or modified files"""

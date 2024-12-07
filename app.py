@@ -6,13 +6,11 @@ from openai import OpenAI
 from pdf2image import convert_from_path
 import tempfile
 import json
-import requests  # For making HTTP requests
+import requests
 from config import CREDIT_CARD_EMAILS, ADDITIONAL_RECIPIENTS
 from gmail_service import get_gmail_service, create_message_with_attachment, send_message, logger
 from dotenv import load_dotenv
 load_dotenv(override=True)
-import pickle
-from google_auth_oauthlib.flow import InstalledAppFlow
 from upload_to_drive import upload_file_to_drive
 from settings import get_settings
 from admin import admin_bp
@@ -22,8 +20,11 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Set poppler path
-POPPLER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'poppler', 'poppler-24.08.0', 'Library', 'bin')
+# Set poppler path based on environment
+if os.name == 'nt':  # Windows
+    POPPLER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'poppler', 'poppler-24.08.0', 'Library', 'bin')
+else:  # Linux/Unix
+    POPPLER_PATH = '/usr/bin'  # Default path for poppler-utils on Linux
 
 # Ensure upload folder exists with proper permissions
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -531,6 +532,5 @@ def authorize_gmail():
         return jsonify({'error': error_msg}), 500
 
 if __name__ == '__main__':
-    host = os.environ.get('HOST', '0.0.0.0')
     port = int(os.environ.get('PORT', 8080))
-    app.run(host=host, port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)
