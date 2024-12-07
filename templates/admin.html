@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Invoice Processor Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --darker-bg: #1F1F1F;
+            --border-color: #272727;
+            --text-color: #FFFFFF;
+            --highlight-color: #BB86FC;
+            --highlight-hover: #9B51E0;
+            --card-bg: #1F1F1F;
+            --success-color: #059669;
+            --danger-color: #CF6679;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background-color: var(--darker-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--highlight-color);
+            border-color: var(--highlight-color);
+            color: var(--dark-bg);
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--highlight-hover);
+            border-color: var(--highlight-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .btn-secondary {
+            background-color: var(--darker-bg);
+            border-color: var(--border-color);
+        }
+
+        .form-control {
+            background-color: var(--darker-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .form-control:focus {
+            background-color: var(--darker-bg);
+            border-color: var(--highlight-color);
+            box-shadow: 0 0 0 0.25rem rgba(187, 134, 252, 0.25);
+            color: var(--text-color);
+        }
+
+        .table {
+            color: var(--text-color);
+        }
+
+        .form-check-input:checked {
+            background-color: var(--highlight-color);
+            border-color: var(--highlight-color);
+        }
+
+        .page-title {
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .input-group .btn {
+            border-top-right-radius: 6px !important;
+            border-bottom-right-radius: 6px !important;
+        }
+
+        .alert {
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .alert-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: var(--text-color);
+        }
+
+        .alert-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="page-title">
+            <i class="fas fa-cog me-2"></i>Admin Dashboard
+        </h1>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- System Controls -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-sliders-h me-2"></i>System Controls
+            </div>
+            <div class="card-body">
+                <form action="/admin/settings" method="POST">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="emails_enabled" name="emails_enabled" {% if settings.emails_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="emails_enabled">
+                            <i class="fas fa-envelope me-2"></i>Enable Email Notifications
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="zapier_enabled" name="zapier_enabled" {% if settings.zapier_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="zapier_enabled">
+                            <i class="fas fa-bolt me-2"></i>Enable Zapier Integration
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Credit Cards -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-credit-card me-2"></i>Credit Card Email Mappings
+            </div>
+            <div class="card-body">
+                <form action="/admin/credit-cards" method="POST">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Credit Card</th>
+                                    <th>Email</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="creditCardTable">
+                                {% for card, email in credit_cards.items() %}
+                                <tr>
+                                    <td>
+                                        <input type="text" class="form-control" name="card_name[]" value="{{ card }}">
+                                    </td>
+                                    <td>
+                                        <input type="email" class="form-control" name="card_email[]" value="{{ email }}">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-secondary me-2" onclick="addCreditCard()">
+                        <i class="fas fa-plus me-2"></i>Add Credit Card
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Additional Recipients -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users me-2"></i>Additional Recipients
+            </div>
+            <div class="card-body">
+                <form action="/admin/recipients" method="POST">
+                    <div id="recipientsList">
+                        {% for email in recipients %}
+                        <div class="input-group mb-3">
+                            <input type="email" class="form-control" name="recipients[]" value="{{ email }}">
+                            <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-secondary me-2" onclick="addRecipient()">
+                        <i class="fas fa-plus me-2"></i>Add Recipient
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function addCreditCard() {
+            const table = document.getElementById('creditCardTable');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" class="form-control" name="card_name[]"></td>
+                <td><input type="email" class="form-control" name="card_email[]"></td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            table.appendChild(row);
+        }
+
+        function addRecipient() {
+            const list = document.getElementById('recipientsList');
+            const div = document.createElement('div');
+            div.className = 'input-group mb-3';
+            div.innerHTML = `
+                <input type="email" class="form-control" name="recipients[]">
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            list.appendChild(div);
+        }
+    </script>
+</body>
+</html>

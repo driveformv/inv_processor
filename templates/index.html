@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Processor Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --darker-bg: #1F1F1F;
+            --border-color: #272727;
+            --text-color: #FFFFFF;
+            --highlight-color: #BB86FC;
+            --highlight-hover: #9B51E0;
+            --card-bg: #1F1F1F;
+            --success-color: #059669;
+            --danger-color: #CF6679;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 2.5rem;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--darker-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-box:hover {
+            border-color: var(--highlight-color);
+            background-color: rgba(187, 134, 252, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-box i {
+            font-size: 3rem;
+            color: var(--highlight-color);
+            margin-bottom: 1rem;
+        }
+
+        .result-box {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            background-color: var(--darker-bg);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .result-item {
+            padding: 1rem;
+            margin: 0.75rem 0;
+            background-color: var(--dark-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--highlight-color);
+            transition: transform 0.2s ease;
+        }
+
+        .result-item:hover {
+            transform: translateX(5px);
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #9CA3AF;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            word-break: break-word;
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: rgba(207, 102, 121, 0.1);
+            border: 1px solid rgba(207, 102, 121, 0.2);
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--highlight-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--highlight-hover);
+            transform: translateY(-1px);
+        }
+
+        .text-muted {
+            color: #9CA3AF !important;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--highlight-color), #818CF8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--highlight-color);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--highlight-color);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .upload-box {
+                padding: 1.5rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h1 class="text-center page-title">Invoice Processor Tool</h1>
+                        
+                        <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+                            <div class="mb-3">
+                                <label for="creditCard" class="form-label">Credit Card Used</label>
+                                <select class="form-select" id="creditCard" name="credit_card" required>
+                                    <option value="">Select Credit Card</option>
+                                    <option value="MVT-Marketing-4682">MVT Marketing 4682</option>
+                                    <option value="Hector-7641">Hector 7641</option>
+                                    <option value="Jackie-7381">Jackie 7381</option>
+                                    <option value="Stagecoach-8695">Stagecoach 8695</option>
+                                    <option value="B-Int-7238">B Int 7238</option>
+                                    <option value="B-Tire-1486">B Tire 1486</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="userName" class="form-label">Your Name</label>
+                                <input type="text" class="form-control" id="userName" name="user_name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="expenseReason" class="form-label">Expense Reason</label>
+                                <input type="text" class="form-control form-control-lg" id="expenseReason" name="expense_reason" required>
+                            </div>
+                            <div class="upload-box" onclick="document.getElementById('file').click();">
+                                <i class="fas fa-cloud-upload-alt mb-3"></i>
+                                <h5>Drop your invoice here or click to upload</h5>
+                                <p class="text-muted mb-0">Supports PDF, JPG, JPEG, PNG</p>
+                                <input type="file" id="file" name="file" class="d-none" accept=".pdf,.jpg,.jpeg,.png" onchange="showFileName(this)">
+                                <p id="fileName" class="mt-2 text-muted"></p>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>Process Invoice
+                            </button>
+                        </form>
+
+                        {% if error %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ error }}
+                        </div>
+                        {% endif %}
+
+                        {% if result %}
+                        <div class="result-box">
+                            <h4 class="mb-3">
+                                <i class="fas fa-receipt me-2"></i>Extracted Information
+                            </h4>
+                            <div class="result-item">
+                                <div class="result-label">Invoice Number</div>
+                                <div class="result-value">{{ result.invoice_number }}</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Date</div>
+                                <div class="result-value">{{ result.date }}</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Vendor Name</div>
+                                <div class="result-value">{{ result.vendor_name }}</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Customer Name</div>
+                                <div class="result-value">{{ result.customer_name }}</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Total Amount</div>
+                                <div class="result-value">{{ result.total_amount }}</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Description</div>
+                                <div class="result-value">{{ result.description }}</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Payment Method</div>
+                                <div class="result-value">{{ result.payment_method }}</div>
+                            </div>
+                            {% if result.credit_card != "N/A" %}
+                            <div class="result-item">
+                                <div class="result-label">Credit Card (Last 4)</div>
+                                <div class="result-value">{{ result.credit_card }}</div>
+                            </div>
+                            {% endif %}
+                            {% if result.billing_address != "N/A" %}
+                            <div class="result-item">
+                                <div class="result-label">Billing Address</div>
+                                <div class="result-value">{{ result.billing_address }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        function showFileName(input) {
+            const fileName = input.files[0].name;
+            document.getElementById('fileName').textContent = fileName;
+        }
+
+        // Add drag and drop functionality
+        const uploadBox = document.querySelector('.upload-box');
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            uploadBox.classList.add('highlight');
+        }
+
+        function unhighlight(e) {
+            uploadBox.classList.remove('highlight');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            document.getElementById('file').files = files;
+            showFileName(document.getElementById('file'));
+        }
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadBox.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadBox.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadBox.addEventListener(eventName, unhighlight, false);
+        });
+
+        uploadBox.addEventListener('drop', handleDrop, false);
+
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.querySelector('.loading').style.display = 'flex';
+            
+            const formData = new FormData(this);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.querySelector('.loading').style.display = 'none';  // Hide loading spinner
+                console.log('Success response:', data);  
+                const resultBox = document.querySelector('.result-box') || document.createElement('div');
+                resultBox.className = 'result-box';
+                
+                // Display confirmation message
+                const confirmationDiv = document.createElement('div');
+                confirmationDiv.className = 'alert alert-success';
+                confirmationDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    ${data.message}
+                `;
+                resultBox.innerHTML = confirmationDiv.outerHTML;
+                document.querySelector('.card-body').appendChild(resultBox);
+                
+                // Clear the form
+                document.getElementById('uploadForm').reset();
+                document.getElementById('fileName').textContent = '';
+            })
+            .catch(error => {
+                document.querySelector('.loading').style.display = 'none';  // Hide loading spinner
+                console.error('Error:', error);
+                const resultBox = document.querySelector('.result-box') || document.createElement('div');
+                resultBox.className = 'result-box';
+                resultBox.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        ${error.message || 'An error occurred while processing your request.'}
+                    </div>
+                `;
+                document.querySelector('.card-body').appendChild(resultBox);
+            });
+        });
+    </script>
+</body>
+</html>
