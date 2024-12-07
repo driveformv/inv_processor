@@ -55,47 +55,15 @@ def get_gmail_service():
     try:
         logger.info("Getting Gmail service...")
         
-        # Check if credentials.json exists first
-        if not os.path.exists('credentials.json'):
-            error_msg = "credentials.json not found. Please ensure you have downloaded it from Google Cloud Console."
-            logger.error(error_msg)
-            raise FileNotFoundError(error_msg)
-        
-        # Check if token.pickle exists
-        if not os.path.exists('token.pickle'):
-            error_msg = "No Gmail credentials found. Please visit /authorize_gmail first."
-            logger.error(error_msg)
-            raise FileNotFoundError(error_msg)
-            
-        # Load credentials from token.pickle
-        logger.info("Loading credentials from token.pickle")
+        # Get credentials from environment variable using authorize.py
+        from authorize import get_credentials
         try:
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
-        except (pickle.UnpicklingError, EOFError) as e:
-            error_msg = f"Error loading credentials from token.pickle: {str(e)}. Please reauthorize at /authorize_gmail"
+            creds = get_credentials()
+            logger.info("Successfully obtained credentials from environment variable")
+        except Exception as e:
+            error_msg = f"Error getting credentials from environment: {str(e)}"
             logger.error(error_msg)
-            # Delete corrupted token file
-            os.remove('token.pickle')
-            raise ValueError(error_msg)
-            
-        # Check if credentials are valid
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                logger.info("Refreshing expired credentials")
-                try:
-                    creds.refresh(Request())
-                    # Save refreshed credentials
-                    with open('token.pickle', 'wb') as token:
-                        pickle.dump(creds, token)
-                except Exception as e:
-                    error_msg = f"Error refreshing credentials: {str(e)}. Please reauthorize at /authorize_gmail"
-                    logger.error(error_msg)
-                    raise ValueError(error_msg)
-            else:
-                error_msg = "Invalid credentials. Please visit /authorize_gmail to reauthorize."
-                logger.error(error_msg)
-                raise ValueError(error_msg)
+            raise
         
         try:
             service = build('gmail', 'v1', credentials=creds)
