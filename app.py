@@ -16,6 +16,7 @@ from settings import get_settings
 from admin import admin_bp
 import logging
 import sys
+import httpx  # Import httpx library
 
 # Configure logging
 logging.basicConfig(
@@ -54,8 +55,12 @@ else:  # Linux/Unix
 # Ensure upload folder exists with proper permissions
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize the OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Initialize OpenAI client
+client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY'),
+    base_url="https://api.openai.com/v1",  # Explicitly set base URL
+    http_client=httpx.Client(trust_env=False)  # Disable automatic proxy detection
+)
 
 # Register blueprints with proper URL prefix
 app.register_blueprint(admin_bp, url_prefix='/admin')
