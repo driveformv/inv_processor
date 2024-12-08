@@ -17,11 +17,15 @@ from admin import admin_bp
 import logging
 import sys
 import httpx  # Import httpx library
+from debug_credentials import debug_credentials
 
 print("=== Starting application initialization ===")
 print(f"Python version: {sys.version}")
 print(f"Current directory: {os.getcwd()}")
 print(f"Directory contents: {os.listdir('.')}")
+
+# Debug credentials first
+debug_credentials()
 
 # Configure logging
 logging.basicConfig(
