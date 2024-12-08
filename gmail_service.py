@@ -1,6 +1,4 @@
 from dotenv import load_dotenv
-load_dotenv(override=True)  # Force reload
-
 from googleapiclient.discovery import build
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -38,7 +36,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# If modifying these scopes, delete the file token.pickle.
+# Gmail API service setup
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.send',
     'https://www.googleapis.com/auth/gmail.compose',
@@ -51,12 +49,16 @@ def get_gmail_service():
     try:
         logger.info("Getting Gmail service...")
         
-        # Get credentials from authorize.py
+        # Get credentials from authorize.py (this will handle service account and delegation)
         credentials = get_credentials()
         
         # Build the Gmail service
         service = build('gmail', 'v1', credentials=credentials)
-        logger.info("Gmail service initialized successfully")
+        
+        # Test the service by getting the user profile
+        user_profile = service.users().getProfile(userId='me').execute()
+        logger.info(f"Gmail service initialized successfully for {user_profile.get('emailAddress')}")
+        
         return service
         
     except Exception as e:

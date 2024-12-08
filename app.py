@@ -501,75 +501,26 @@ Reason: {expense_reason}
 
 @app.route('/authorize_gmail')
 def authorize_gmail():
-    """Handle Gmail authorization flow"""
+    """Test Gmail service account connection"""
     try:
-        logger.info("Starting Gmail authorization...")
+        logger.info("Testing Gmail service account connection...")
         
-        # Check if credentials.json exists
-        if not os.path.exists('credentials.json'):
-            error_msg = "credentials.json not found. Please download it from Google Cloud Console."
-            logger.error(error_msg)
-            return jsonify({'error': error_msg}), 400
-            
-        # Force HTTPS off for local development
-        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-        
-        # Create the flow using the client secrets file
-        try:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json',
-                scopes=['https://www.googleapis.com/auth/gmail.send',
-                       'https://www.googleapis.com/auth/gmail.compose',
-                       'https://www.googleapis.com/auth/gmail.modify',
-                       'https://www.googleapis.com/auth/gmail.readonly']
-            )
-        except Exception as e:
-            error_msg = f"Error creating OAuth flow: {str(e)}. Please check your credentials.json file."
-            logger.error(error_msg)
-            return jsonify({'error': error_msg}), 400
-        
-        # Run the OAuth flow
-        try:
-            creds = flow.run_local_server(
-                host='localhost',
-                port=8080,
-                open_browser=True,
-                prompt='consent'
-            )
-        except Exception as e:
-            error_msg = f"OAuth flow failed: {str(e)}"
-            logger.error(error_msg)
-            return jsonify({'error': error_msg}), 500
-        
-        # Save the credentials
-        try:
-            with open('token.pickle', 'wb') as token:
-                pickle.dump(creds, token)
-            logger.info("Successfully saved credentials to token.pickle")
-        except Exception as e:
-            error_msg = f"Error saving credentials: {str(e)}"
-            logger.error(error_msg)
-            return jsonify({'error': error_msg}), 500
-        
-        # Verify the credentials work by attempting to create a service
+        # Try to get Gmail service using service account
         try:
             service = get_gmail_service()
             if service:
-                logger.info("Successfully verified Gmail credentials")
+                logger.info("Successfully verified Gmail service account credentials")
                 return jsonify({
-                    'message': 'Gmail authorization successful',
-                    'email': creds.token['email'] if 'email' in creds.token else 'Unknown'
+                    'message': 'Gmail service account connection successful',
+                    'email': os.environ.get('GMAIL_SENDER_EMAIL', 'Unknown')
                 })
         except Exception as e:
-            error_msg = f"Error verifying credentials: {str(e)}"
+            error_msg = f"Error verifying service account credentials: {str(e)}"
             logger.error(error_msg)
-            # Delete the token file since it might be invalid
-            if os.path.exists('token.pickle'):
-                os.remove('token.pickle')
             return jsonify({'error': error_msg}), 500
             
     except Exception as e:
-        error_msg = f"Gmail authorization error: {str(e)}"
+        error_msg = f"Gmail service account test error: {str(e)}"
         logger.error(error_msg)
         return jsonify({'error': error_msg}), 500
 
