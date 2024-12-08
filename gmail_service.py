@@ -1,9 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv(override=True)  # Force reload
 
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -11,10 +8,9 @@ from email.mime.base import MIMEBase
 from email import encoders
 import base64
 import os
-import pickle
 import logging
 from datetime import datetime
-import webbrowser
+from authorize import get_credentials
 
 # Configure logging
 log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -55,28 +51,16 @@ def get_gmail_service():
     try:
         logger.info("Getting Gmail service...")
         
-        # Get credentials from environment variable using authorize.py
-        from authorize import get_credentials
-        try:
-            creds = get_credentials()
-            logger.info("Successfully obtained credentials from environment variable")
-        except Exception as e:
-            error_msg = f"Error getting credentials from environment: {str(e)}"
-            logger.error(error_msg)
-            raise
+        # Get credentials from authorize.py
+        credentials = get_credentials()
         
-        try:
-            service = build('gmail', 'v1', credentials=creds)
-            logger.info("Gmail service initialized successfully")
-            return service
-        except Exception as e:
-            error_msg = f"Error building Gmail service: {str(e)}"
-            logger.error(error_msg)
-            raise
+        # Build the Gmail service
+        service = build('gmail', 'v1', credentials=credentials)
+        logger.info("Gmail service initialized successfully")
+        return service
         
     except Exception as e:
-        error_msg = f"Error getting Gmail service: {str(e)}"
-        logger.error(error_msg)
+        logger.error(f"Error getting Gmail service: {str(e)}")
         raise
 
 def create_message_with_attachment(sender, to, cc, subject, message_text, file_path=None):
