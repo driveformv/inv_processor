@@ -37,13 +37,13 @@ def get_credentials():
     
     # Fix private key newlines
     if 'private_key' in creds_dict:
-        # Replace literal 'n' with newline at start and end of key
+        # Replace literal \n with actual newlines
         private_key = creds_dict['private_key']
-        if private_key.startswith('-----BEGIN PRIVATE KEY-----n'):
-            private_key = private_key.replace('-----BEGIN PRIVATE KEY-----n', '-----BEGIN PRIVATE KEY-----\n')
-        if private_key.endswith('n-----END PRIVATE KEY-----n'):
-            private_key = private_key.replace('n-----END PRIVATE KEY-----n', '\n-----END PRIVATE KEY-----\n')
+        if '\\n' in private_key:  # Handle JSON-escaped newlines
+            private_key = private_key.replace('\\n', '\n')
         creds_dict['private_key'] = private_key
+        
+        logging.debug("Formatted private key: %s", creds_dict['private_key'])
     
     # Create credentials from service account info with domain-wide delegation
     credentials = service_account.Credentials.from_service_account_info(
