@@ -4,6 +4,7 @@ import json
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 SCOPES = [
     'https://www.googleapis.com/auth/drive.file',
@@ -14,88 +15,48 @@ SCOPES = [
 ]
 
 def get_credentials():
+    logger.info("Starting credentials retrieval process...")
+    
+    # Get the sender email for delegation
+    user_email = os.environ.get('GMAIL_SENDER_EMAIL')
+    if not user_email:
+        logger.error("GMAIL_SENDER_EMAIL environment variable is not set")
+        raise ValueError("GMAIL_SENDER_EMAIL environment variable is not set")
+
+    # Get the service account credentials JSON
+    creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+    if not creds_json:
+        logger.error("GOOGLE_CREDENTIALS environment variable is not set")
+        raise ValueError("GOOGLE_CREDENTIALS environment variable is not set")
+    
     try:
-        user_email = os.environ.get('GMAIL_SENDER_EMAIL')
-        if not user_email:
-            logging.error("GMAIL_SENDER_EMAIL environment variable not found")
-            raise ValueError("GMAIL_SENDER_EMAIL environment variable not found")
-
-        creds_json = os.environ.get('GOOGLE_CREDENTIALS')
-        if not creds_json:
-            logging.error("GOOGLE_CREDENTIALS environment variable not found")
-            raise ValueError("GOOGLE_CREDENTIALS environment variable not found")
-
-        logging.info("Attempting to parse credentials...")
+        # Parse the JSON string into a Python dictionary
+        logger.info("Parsing credentials JSON...")
+        credentials_dict = json.loads(creds_json)
+        logger.info("Successfully parsed credentials JSON")
         
-        # First try to load the JSON directly
-        try:
-            creds_dict = json.loads(creds_json)
-            logging.info("Successfully parsed credentials JSON")
-        except json.JSONDecodeError as e:
-            logging.warning(f"Initial JSON parse failed: {str(e)}")
-            logging.info("Attempting to clean JSON string...")
-            # If that fails, try to clean up the JSON string
-            creds_json = creds_json.replace('\n', '').replace('\r', '').strip()
-            try:
-                creds_dict = json.loads(creds_json)
-                logging.info("Successfully parsed cleaned credentials JSON")
-            except json.JSONDecodeError as e:
-                logging.error("Failed to parse credentials even after cleaning")
-                logging.error(f"JSON Error: {str(e)}")
-                logging.error(f"First 100 chars of credentials: {creds_json[:100]}...")
-                raise
+        # Create service account credentials
+        logger.info("Creating service account credentials...")
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=SCOPES
+        )
+        logger.info("Successfully created service account credentials")
         
-        # Verify required fields
-        required_fields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email']
-        missing_fields = [field for field in required_fields if field not in creds_dict]
-        if missing_fields:
-            logging.error(f"Missing required fields in credentials: {missing_fields}")
-            raise ValueError(f"Credentials missing required fields: {missing_fields}")
+        # Delegate credentials to the sender email
+        logger.info(f"Delegating credentials to {user_email}...")
+        delegated_credentials = credentials.with_subject(user_email)
+        logger.info("Successfully created delegated credentials")
         
-        # Now fix the private key after we have the dict
-        if 'private_key' in creds_dict:
-            private_key = creds_dict['private_key']
-            logging.debug("Original private key length: %d", len(private_key))
-            
-            # Handle both escaped and unescaped newlines
-            private_key = private_key.replace('\\n', '\n').replace('n', '\n')
-            
-            # Ensure proper PEM format
-            if not private_key.startswith('-----BEGIN PRIVATE KEY-----'):
-                private_key = '-----BEGIN PRIVATE KEY-----\n' + private_key
-            if not private_key.endswith('-----END PRIVATE KEY-----'):
-                private_key = private_key + '\n-----END PRIVATE KEY-----'
-            
-            creds_dict['private_key'] = private_key
-            logging.debug("Processed private key length: %d", len(private_key))
-            logging.debug("Private key starts with: %s", private_key[:50])
-            logging.debug("Private key ends with: %s", private_key[-50:])
+        return delegated_credentials
         
-        try:
-            logging.info("Creating service account credentials...")
-            credentials = service_account.Credentials.from_service_account_info(
-                creds_dict,
-                scopes=SCOPES
-            )
-            logging.info("Successfully created service account credentials")
-            
-            logging.info(f"Delegating credentials to {user_email}")
-            delegated_credentials = credentials.with_subject(user_email)
-            logging.info(f"Successfully created delegated credentials for {user_email}")
-            
-            return delegated_credentials
-            
-        except Exception as e:
-            logging.error(f"Error creating service account credentials: {str(e)}")
-            logging.error("Credential info: type=%s, project_id=%s, client_email=%s", 
-                         creds_dict.get('type'), 
-                         creds_dict.get('project_id'), 
-                         creds_dict.get('client_email'))
-            raise
-            
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in GOOGLE_CREDENTIALS: {e}")
+        logger.error(f"First 100 chars of credentials: {creds_json[:100]}...")
+        raise ValueError(f"Invalid JSON in GOOGLE_CREDENTIALS: {e}")
     except Exception as e:
-        logging.error(f"Fatal error in get_credentials: {str(e)}")
-        raise
+        logger.error(f"Failed to create service account credentials: {e}")
+        raise RuntimeError(f"Failed to create service account credentials: {e}")
 
 if __name__ == "__main__":
     get_credentials()
