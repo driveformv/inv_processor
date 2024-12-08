@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-from authorize import fix_private_key
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ def debug_credentials():
             
         # Try to fix the private key
         if 'private_key' in creds_dict:
-            fixed_key = fix_private_key(creds_dict['private_key'])
+            fixed_key = creds_dict['private_key']
             logger.info("\n=== Fixed Private Key ===")
             logger.info(fixed_key)
             
