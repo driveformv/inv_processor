@@ -13,9 +13,30 @@ SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly'
 ]
 
-def get_credentials():
-    logging.debug("GOOGLE_CREDENTIALS: %s", os.environ.get('GOOGLE_CREDENTIALS'))
+def fix_private_key(key):
+    # Remove any 'n' characters after the header and before the footer
+    key = key.replace('-----BEGIN PRIVATE KEY-----n', '-----BEGIN PRIVATE KEY-----\n')
+    key = key.replace('n-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----')
+    
+    # Replace remaining 'n' characters with newlines
+    parts = key.split('\n')
+    fixed_parts = []
+    for part in parts:
+        if part.startswith('-----'):
+            fixed_parts.append(part)
+        else:
+            # Split by 'n' and filter out empty strings
+            subparts = [p for p in part.split('n') if p]
+            fixed_parts.extend(subparts)
+    
+    # Join with newlines and ensure proper ending
+    fixed_key = '\n'.join(fixed_parts)
+    if not fixed_key.endswith('\n'):
+        fixed_key += '\n'
+        
+    return fixed_key
 
+def get_credentials():
     user_email = os.environ.get('GMAIL_SENDER_EMAIL')
     if not user_email:
         raise ValueError("GMAIL_SENDER_EMAIL environment variable not found")
@@ -23,43 +44,15 @@ def get_credentials():
     creds_json = os.environ.get('GOOGLE_CREDENTIALS')
     if not creds_json:
         raise ValueError("GOOGLE_CREDENTIALS environment variable not found")
-    
-    logging.debug("Credentials JSON: %s", creds_json)
 
-    creds_dict = json.loads(creds_json)
-    
-    if 'private_key' in creds_dict:
-        private_key = creds_dict['private_key']
-        
-        # Clean up the private key string
-        private_key = private_key.replace('\\n', '\n')  # Handle JSON escaped newlines
-        private_key = private_key.replace('-----n', '-----')  # Remove n after delimiters
-        
-        # Split the key into parts
-        key_parts = private_key.split('\n')
-        
-        # Reconstruct the key with proper formatting
-        formatted_key = []
-        for part in key_parts:
-            if part.startswith('-----'):
-                formatted_key.append(part)
-            elif part.strip():  # Only process non-empty lines
-                # Remove any remaining 'n' characters and add proper line breaks
-                clean_part = part.replace('n', '')
-                if clean_part:
-                    formatted_key.append(clean_part)
-        
-        # Ensure proper beginning and ending
-        if not formatted_key[0].endswith('-----'):
-            formatted_key[0] = formatted_key[0].replace('-----n', '-----')
-        if not formatted_key[-1].startswith('-----'):
-            formatted_key[-1] = formatted_key[-1].replace('n-----', '-----')
-            
-        # Join with proper newlines
-        creds_dict['private_key'] = '\n'.join(formatted_key)
-        logging.debug("Formatted private key: %s", creds_dict['private_key'])
-    
     try:
+        creds_dict = json.loads(creds_json)
+        
+        if 'private_key' in creds_dict:
+            # Fix the private key format
+            creds_dict['private_key'] = fix_private_key(creds_dict['private_key'])
+            logging.debug(f"Fixed private key: {creds_dict['private_key']}")
+        
         credentials = service_account.Credentials.from_service_account_info(
             creds_dict,
             scopes=SCOPES
@@ -69,6 +62,9 @@ def get_credentials():
         logging.info(f"Created delegated credentials for {user_email}")
         return delegated_credentials
         
+    except json.JSONDecodeError as e:
+        logging.error(f"Error parsing credentials JSON: {str(e)}")
+        raise
     except Exception as e:
         logging.error(f"Error creating credentials: {str(e)}")
         raise
